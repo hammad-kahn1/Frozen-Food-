@@ -1,0 +1,26 @@
+default_platform(:android)
+
+platform :android do
+  desc "Deploy a new version to the Google Play Store"
+  lane :deploy do
+    # Ensure working directory is clean
+    ensure_git_status_clean
+
+    # Upload to Play Store Internal Testing track first
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/productionRelease/app-production-release.aab',
+      skip_upload_apk: true,
+      skip_upload_metadata: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    # Send Slack notification
+    slack(
+      message: "Successfully deployed Frozen Food Android App to Internal Testing! 🚀",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+end

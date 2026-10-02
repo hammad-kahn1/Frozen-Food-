@@ -1,0 +1,25 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :deploy do
+    # Fetch Certificates using Match
+    match(
+      type: "appstore",
+      readonly: true
+    )
+    
+    # Upload to TestFlight
+    upload_to_testflight(
+      ipa: "../build/ios/ipa/frozen_food.ipa",
+      skip_waiting_for_build_processing: true
+    )
+    
+    # Send Slack notification
+    slack(
+      message: "Successfully deployed Frozen Food iOS App to TestFlight! 🍏",
+      success: true,
+      slack_url: ENV["SLACK_WEBHOOK_URL"]
+    )
+  end
+end

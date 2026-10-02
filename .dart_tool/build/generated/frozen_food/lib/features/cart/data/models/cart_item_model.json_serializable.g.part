@@ -1,0 +1,29 @@
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+CartItemModel _$CartItemModelFromJson(Map<String, dynamic> json) =>
+    CartItemModel(
+      productId: json['productId'] as String,
+      variantId: json['variantId'] as String,
+      productName: json['productName'] as String,
+      variantName: json['variantName'] as String,
+      imageUrl: json['imageUrl'] as String?,
+      quantity: (json['quantity'] as num).toInt(),
+      unitPrice: (json['unitPrice'] as num).toDouble(),
+      coldChainRequired: json['coldChainRequired'] as bool? ?? true,
+      requiresDryIce: json['requiresDryIce'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$CartItemModelToJson(CartItemModel instance) =>
+    <String, dynamic>{
+      'productId': instance.productId,
+      'variantId': instance.variantId,
+      'productName': instance.productName,
+      'variantName': instance.variantName,
+      'imageUrl': instance.imageUrl,
+      'quantity': instance.quantity,
+      'unitPrice': instance.unitPrice,
+      'coldChainRequired': instance.coldChainRequired,
+      'requiresDryIce': instance.requiresDryIce,
+    };

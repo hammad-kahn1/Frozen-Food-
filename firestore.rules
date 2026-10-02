@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ─────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.get('role', '') == 'admin';
+    }
+
+    function isDeliveryAgent() {
+      return isAuthenticated() &&
+             request.auth.token.get('role', '') == 'delivery_agent';
+    }
+
+    function isAdminOrDeliveryAgent() {
+      return isAdmin() || isDeliveryAgent();
+    }
+
+    // Ensure client cannot write server-managed fields
+    function doesNotModifyServerFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['createdAt', 'updatedAt', 'total', 'subtotal', 'tax',
+                  'deliveryFee', 'paymentStatus', 'status', 'discount']);
+    }
+
+    // ─── Users ────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isCurrentUser(userId) || isAdmin();
+      allow create: if isCurrentUser(userId) &&
+                       request.resource.data.role == 'customer';
+      allow update: if isCurrentUser(userId) &&
+                       doesNotModifyServerFields() &&
+                       request.resource.data.role == resource.data.role;
+      allow delete: if isAdmin();
+
+      match /addresses/{addressId} {
+        allow read, write: if isCurrentUser(userId);
+        allow delete: if isCurrentUser(userId);
+      }
+
+      match /wishlist/{itemId} {
+        allow read, write: if isCurrentUser(userId);
+      }
+    }
+
+    // ─── Products ─────────────────────────────────────────────────
+    match /products/{productId} {
+      allow read: if true; 
+      allow create, update, delete: if isAdmin();
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isAuthenticated() &&
+                         request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // ─── Categories ───────────────────────────────────────────────
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ─── Inventory ────────────────────────────────────────────────
+    match /inventory/{variantId} {
+      allow read: if isAuthenticated();
+      // Clients NEVER write to inventory. Only Cloud Functions do.
+      allow write: if false;
+    }
+
+    // ─── Carts ────────────────────────────────────────────────────
+    match /carts/{userId} {
+      allow read, write: if isCurrentUser(userId);
+    }
+
+    // ─── Orders ───────────────────────────────────────────────────
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() &&
+                     (resource.data.userId == request.auth.uid ||
+                      isAdminOrDeliveryAgent());
+      // Orders are ONLY created by Cloud Functions
+      allow create: if false;
+      allow update: if isCurrentUser(resource.data.userId) &&
+                       request.resource.data.diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(['specialInstructions', 'cancellationRequested']) ||
+                    isAdmin();
+      allow delete: if false;
+
+      match /statusHistory/{historyId} {
+        allow read: if isAuthenticated() &&
+                       (get(/databases/$(database)/documents/orders/$(orderId)).data.userId
+                        == request.auth.uid || isAdminOrDeliveryAgent());
+        allow write: if false;
+      }
+    }
+
+    // ─── Delivery Slots ───────────────────────────────────────────
+    match /deliverySlots/{slotId} {
+      allow read: if isAuthenticated();
+      // Clients never write directly
+      allow write: if false;
+    }
+
+    // ─── Promotions ───────────────────────────────────────────────
+    match /promotions/{promotionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

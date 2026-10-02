@@ -1,0 +1,105 @@
+name: Flutter CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, staging ]
+  pull_request:
+    branches: [ main, staging ]
+
+jobs:
+  test_and_analyze:
+    name: Code Analysis & Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          
+      - name: Install Dependencies
+        run: flutter pub get
+        
+      - name: Verify Formatting
+        run: dart format --output=none --set-exit-if-changed .
+        
+      - name: Analyze Code
+        run: flutter analyze
+        
+      - name: Run Unit Tests
+        run: flutter test --coverage
+        
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage/lcov.info
+
+  build_android:
+    name: Build Android AppBundle
+    needs: test_and_analyze
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo "storeFile=upload-keystore.jks" > android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          
+      - name: Build AAB
+        run: flutter build appbundle --flavor production -t lib/main_production.dart --obfuscate --split-debug-info=build/app/outputs/symbols
+        
+      - name: Deploy to Play Store (Fastlane)
+        uses: maierj/fastlane-action@v3.0.0
+        with:
+          lane: android deploy
+          subdirectory: android
+        env:
+          PLAY_STORE_CONFIG_JSON: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+
+  build_ios:
+    name: Build iOS IPA
+    needs: test_and_analyze
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          
+      - name: Install iOS Certificates (Match)
+        run: bundle exec fastlane match appstore --readonly
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_TOKEN }}
+          
+      - name: Build IPA
+        run: flutter build ipa --flavor production -t lib/main_production.dart --export-options-plist=ios/ExportOptions.plist --obfuscate --split-debug-info=build/ios/outputs/symbols
+        
+      - name: Deploy to TestFlight (Fastlane)
+        uses: maierj/fastlane-action@v3.0.0
+        with:
+          lane: ios deploy
+          subdirectory: ios
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
