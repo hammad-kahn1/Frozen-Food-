@@ -1,0 +1,54 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    name: Build Flutter Web & Deploy to Firebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Run Code Generation (Freezed / JSON)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Create dummy google-services.json for build
+        run: |
+          mkdir -p android/app
+          cat > android/app/google-services.json << 'EOF'
+          {
+            "project_info": { "project_id": "frozen-food-dev", "project_number": "000000000000" },
+            "client": [{ "client_info": { "mobilesdk_app_id": "1:000000000000:android:0000000000000000" }, "api_key": [{ "current_key": "PLACEHOLDER" }] }]
+          }
+          EOF
+
+      - name: Build Flutter Web
+        run: |
+          flutter build web \
+            -t lib/main_development.dart \
+            --web-renderer canvaskit \
+            --release \
+            --dart-define=FLUTTER_WEB_AUTO_DETECT=true
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          channelId: live
+          projectId: frozen-food-dev
