@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app/config/flavor_config.dart';
 import 'app/di/injection_container.dart';
 import 'app/router/app_router.dart';
 import 'app/theme/app_theme.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,11 +36,18 @@ class FrozenFoodApp extends StatelessWidget {
     // Instantiate router (normally injected via DI)
     final appRouter = AppRouter();
 
-    return MaterialApp.router(
-      title: 'Frozen Food Delivery',
-      theme: AppTheme.light,
-      debugShowCheckedModeBanner: FlavorConfig.instance.showDebugBanner,
-      routerConfig: appRouter.router,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>(
+          create: (_) => sl<AuthBloc>()..add(const AuthStarted()),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'Frozen Food Delivery',
+        theme: AppTheme.light,
+        debugShowCheckedModeBanner: FlavorConfig.instance.showDebugBanner,
+        routerConfig: appRouter.router,
+      ),
     );
   }
 }

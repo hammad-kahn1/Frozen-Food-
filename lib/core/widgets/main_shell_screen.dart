@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_spacing.dart';
-import '../../../../app/theme/app_radius.dart';
-import '../../../home/presentation/screens/home_screen.dart';
-import '../../../cart/presentation/screens/cart_screen.dart';
-import '../../../orders/presentation/screens/order_list_screen.dart';
-import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../app/theme/app_colors.dart';
+import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/cart/presentation/screens/cart_screen.dart';
+import '../../features/orders/presentation/screens/order_list_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});

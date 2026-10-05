@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'route_names.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
+import '../../core/widgets/main_shell_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 
 // Note: These screens are stubs. We will implement them in the UI phase.
 class StubScreen extends StatelessWidget {
@@ -18,11 +21,23 @@ class AppRouter {
   AppRouter();
 
   late final GoRouter router = GoRouter(
-    initialLocation: RouteNames.home,
+    initialLocation: RouteNames.login,
     routes: [
       GoRoute(
         path: RouteNames.home,
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const MainShellScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.register,
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: RouteNames.categories,

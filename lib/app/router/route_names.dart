@@ -11,6 +11,7 @@ abstract class RouteNames {
   static const orderDetail = 'orderDetail';
   static const login = '/login';
   static const register = '/register';
+  static const forgotPassword = '/forgot-password';
   static const notifications = '/notifications';
   static const orderConfirmation = '/order-confirmation';
 }
