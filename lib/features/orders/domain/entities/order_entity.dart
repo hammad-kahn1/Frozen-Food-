@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../enums/order_status.dart';
-import '../../enums/payment_status.dart';
+import '../enums/order_status.dart';
+import '../enums/payment_status.dart';
 import '../../../addresses/domain/entities/address_entity.dart';
 import '../../../delivery/domain/entities/delivery_slot_entity.dart';
 import 'order_item_entity.dart';
